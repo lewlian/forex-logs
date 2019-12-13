@@ -1,12 +1,20 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:forexlog/home_page.dart';
+import './login_page.dart';
+import './auth_service.dart';
+import 'package:provider/provider.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(
+      ChangeNotifierProvider<AuthService>(
+        child: MyApp(),
+        builder: (BuildContext context) {
+          return AuthService();
+        },
+      ),
+    );
+
 class MyApp extends StatelessWidget {
-
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -14,62 +22,19 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-  final String title; 
-
-  
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-    File sampleImage;
-
-  Future _getImage() async {
-    var tempImage = await ImagePicker.pickImage(source: ImageSource.gallery);
-    
-    setState(() {
-      sampleImage = tempImage;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
+      home: FutureBuilder(
+        // get the Provider, and call the getUser method
+        future: Provider.of<AuthService>(context).getUser(),
+        // wait for the future to resolve and render the appropriate
+        // widget for HomePage or LoginPage
+        builder: (context, AsyncSnapshot snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return snapshot.hasData ? HomePage() : LoginPage();
+          } else {
+            return Container(color: Colors.white);
+          }
+        },
       ),
-      body: Center(
-        child: sampleImage == null? Text('Select an image'): enableUpload(),
-       ),
-       floatingActionButton: new FloatingActionButton(
-         onPressed: _getImage,
-         tooltip: 'Add Image',
-          child: new Icon (Icons.add),
-        ),
-    );
-  }
-  Widget enableUpload() {
-    return Container(
-      child:Column(children: <Widget>[
-        Image.file(sampleImage,height:300.0, width: 300.0),
-      RaisedButton(
-        elevation: 7.0,
-        child: Text ('Upload'),
-        textColor:Colors.white,
-        color:Colors.blue,
-      onPressed: () {
-        final StorageReference firebaseStorageRef = FirebaseStorage.instance.ref().child("myimage.jpg");
-        final StorageUploadTask task = firebaseStorageRef.putFile(sampleImage);
-      },)
-      ],)
     );
   }
 }
