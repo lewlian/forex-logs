@@ -1,42 +1,53 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-//In this service, we are using a mixin called ChangeNotifier and a method notifyListeners this will allow for the widgets that are using this Service to be updated when the method is called. We are calling notifyListeners when we update the currentUser property because that means that the user has either logged in or logged out and we want the application to update based on the users state.
+abstract class BaseAuth {
+  Future<String> signIn(String email, String password);
 
-class AuthService with ChangeNotifier {
-  var currentUser;
+  Future<String> signUp(String email, String password);
 
-  AuthService() {
-    print("new AuthService");
+  Future<FirebaseUser> getCurrentUser();
+
+  Future<void> sendEmailVerification();
+
+  Future<void> signOut();
+
+  Future<bool> isEmailVerified();
+}
+
+class Auth implements BaseAuth {
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
+  Future<String> signIn(String email, String password) async {
+    AuthResult result = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email, password: password);
+    FirebaseUser user = result.user;
+    return user.uid;
   }
 
-  Future getUser() {
-    return Future.value(currentUser);
+  Future<String> signUp(String email, String password) async {
+    AuthResult result = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email, password: password);
+    FirebaseUser user = result.user;
+    return user.uid;
   }
 
-  // wrappinhg the firebase calls
-  Future logout() {
-    this.currentUser = null;
-    notifyListeners();
-    return Future.value(currentUser);
+  Future<FirebaseUser> getCurrentUser() async {
+    FirebaseUser user = await _firebaseAuth.currentUser();
+    return user;
   }
 
-  // wrapping the firebase calls
-  Future createUser(
-      {String firstName,
-      String lastName,
-      String email,
-      String password}) async {}
+  Future<void> signOut() async {
+    return _firebaseAuth.signOut();
+  }
 
-  // logs in the user if password matches
-  Future loginUser({String email, String password}) {
-    if (password == 'password123') {
-      this.currentUser = {'email': email};
-      notifyListeners();
-      return Future.value(currentUser);
-    } else {
-      this.currentUser = null;
-      return Future.value(null);
-    }
+  Future<void> sendEmailVerification() async {
+    FirebaseUser user = await _firebaseAuth.currentUser();
+    user.sendEmailVerification();
+  }
+
+  Future<bool> isEmailVerified() async {
+    FirebaseUser user = await _firebaseAuth.currentUser();
+    return user.isEmailVerified;
   }
 }
