@@ -35,7 +35,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     //_checkEmailVerification();
-
     _todoList = new List();
     _todoQuery = _database
         .reference()
